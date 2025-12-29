@@ -1,0 +1,462 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Agents</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    .agent-status {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 13px;
+      font-weight: bold;
+      margin-left: 12px;
+      background: #f0f0f0;
+      color: #333;
+      min-width: 100px;
+      text-align: center;
+    }
+    .agent-status.running {
+      background: #fff3cd;
+      color: #856404;
+    }
+    .agent-status.success {
+      background: #d4edda;
+      color: #155724;
+    }
+    .agent-status.error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .agent-card .agent-details {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #e0e0e0;
+      font-size: 12px;
+      color: #666;
+    }
+    .agent-card button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .agent-card .btn {
+      background: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .agent-card .btn:hover:not(:disabled) {
+      background: #0056b3;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    .agent-card .btn:disabled {
+      background: #6c757d;
+    }
+    .command-response {
+      max-height: 400px;
+      overflow-y: auto;
+      background: #f5f5f5;
+      padding: 12px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    .tab {
+      padding: 12px 16px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      color: #666;
+      border-bottom: 2px solid transparent;
+      transition: all 0.3s;
+    }
+    .tab.active {
+      color: #007bff;
+      border-bottom-color: #007bff;
+    }
+    .tab-content {
+      display: none;
+    }
+    .tab-content.active {
+      display: block;
+    }
+  </style>
+</head>
+<body class="simple-page">
+  <div class="navbar">
+    <div class="navbar-inner">
+      <button class="hamburger-btn" id="toggleNav">☰</button>
+      <h1 class="logo">🦷 Dental Clinic</h1>
+      <ul class="nav-menu" id="navMenu">
+        <li><a href="/pages/dashboard.html">Dashboard</a></li>
+        <li><a href="/pages/setup.html">Setup</a></li>
+        <li><a href="/pages/appointments.html">Appointments</a></li>
+        <li><a href="/pages/patients.html">Patients</a></li>
+        <li><a href="/pages/agents.html" class="active">Agents</a></li>
+        <li><a href="/pages/inventory.html">Inventory</a></li>
+        <li><a href="/pages/billing.html">Billing</a></li>
+      </ul>
+      <div class="nav-right">
+        <span id="clinicName" class="clinic-badge"></span>
+        <a class="btn-small" href="/pages/dashboard.html">Back</a>
+      </div>
+    </div>
+  </div>
+
+  <main class="page-content">
+    <!-- Tabs Navigation -->
+    <div class="tabs">
+      <button class="tab active" data-tab="agents">Agents</button>
+      <button class="tab" data-tab="command">AI Command</button>
+      <button class="tab" data-tab="logs">Activity Logs</button>
+    </div>
+
+    <!-- Agents Tab -->
+    <div id="agents-tab" class="tab-content active">
+      <div class="card agents-grid">
+        <div class="agent-card">
+          <h3>📅 Appointment Agent <span class="agent-status" id="apt-status"></span></h3>
+          <p>Checks slots and suggests bookings.</p>
+          <small>Scheduled: 7:00 AM Daily</small>
+          <div style="margin-top:12px;">
+            <button class="btn small" style="background: #007bff; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;"><a href="appointments-report.html" style="text-decoration: none; color: white;">Run Now</a></button>
+          </div>
+          <div class="agent-details" id="apt-details" style="display:none;"></div>
+        </div>
+
+        <div class="agent-card">
+          <h3>💰 Revenue Agent <span class="agent-status" id="rev-status"></span></h3>
+          <p>Tracks unpaid invoices and notifies patients.</p>
+          <small>Scheduled: 7:05 AM Daily</small>
+          <div style="margin-top:12px;">
+            <button class="btn small" data-agent="revenue" onclick="runAgent('revenue', this)">Run Now</button>
+          </div>
+          <div class="agent-details" id="rev-details" style="display:none;"></div>
+        </div>
+
+        <div class="agent-card">
+          <h3>📋 Case Agent <span class="agent-status" id="case-status"></span></h3>
+          <p>Creates cases for completed appointments.</p>
+          <small>Scheduled: 7:10 AM Daily</small>
+          <div style="margin-top:12px;">
+            <button class="btn small" data-agent="case" onclick="runAgent('case', this)">Run Now</button>
+          </div>
+          <div class="agent-details" id="case-details" style="display:none;"></div>
+        </div>
+
+        <div class="agent-card">
+          <h3>📦 Inventory Agent <span class="agent-status" id="inv-status"></span></h3>
+          <p>Creates purchase orders for low stock.</p>
+          <small>Scheduled: 7:15 AM Daily</small>
+          <div style="margin-top:12px;">
+            <button class="btn small" data-agent="inventory" onclick="runAgent('inventory', this)">Run Now</button>
+          </div>
+          <div class="agent-details" id="inv-details" style="display:none;"></div>
+        </div>
+      </div>
+
+      <!-- Run All Agents -->
+      <div class="card" style="margin-top:20px;">
+        <h3>🤖 Run All Agents</h3>
+        <p>Execute all agents in sequence</p>
+        <button class="btn primary" id="runAllBtn" onclick="runAllAgents()">Execute All Agents</button>
+        <div id="allAgentsStatus" style="margin-top:12px; display:none;">
+          <div class="command-response" id="allAgentsLog"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Command Tab -->
+    <div id="command-tab" class="tab-content">
+      <div class="card">
+        <h3>🤖 AI Command Center</h3>
+        <p>Send natural language commands to AI agents</p>
+        
+        <div style="margin: 16px 0;">
+          <label style="display: block; margin-bottom: 8px;">Command:</label>
+          <div class="form-inline">
+            <input id="aiCommand" class="search-input" placeholder="e.g., Reduce cancellations, Increase revenue, Check status" style="flex: 1;">
+          </div>
+        </div>
+
+        <div style="margin-top: 12px;">
+          <button id="execCmd" class="btn primary" onclick="executeAICommand()">Execute Command</button>
+        </div>
+
+        <!-- Available Commands -->
+        <div style="margin-top: 20px;">
+          <h4>Available Commands:</h4>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+            <div style="padding: 12px; background: #f9f9f9; border-radius: 4px; cursor: pointer;" onclick="setCommand('reduce cancellations')">
+              <strong>Reduce Cancellations</strong>
+              <p style="font-size: 12px; color: #666; margin: 4px 0 0 0;">Implement strategies to reduce no-shows</p>
+            </div>
+            <div style="padding: 12px; background: #f9f9f9; border-radius: 4px; cursor: pointer;" onclick="setCommand('increase revenue')">
+              <strong>Increase Revenue</strong>
+              <p style="font-size: 12px; color: #666; margin: 4px 0 0 0;">Optimize billing and case creation</p>
+            </div>
+            <div style="padding: 12px; background: #f9f9f9; border-radius: 4px; cursor: pointer;" onclick="setCommand('optimize inventory')">
+              <strong>Optimize Inventory</strong>
+              <p style="font-size: 12px; color: #666; margin: 4px 0 0 0;">Manage stock levels and reorders</p>
+            </div>
+            <div style="padding: 12px; background: #f9f9f9; border-radius: 4px; cursor: pointer;" onclick="setCommand('improve appointments')">
+              <strong>Improve Appointments</strong>
+              <p style="font-size: 12px; color: #666; margin: 4px 0 0 0;">Optimize scheduling and slots</p>
+            </div>
+            <div style="padding: 12px; background: #f9f9f9; border-radius: 4px; cursor: pointer;" onclick="setCommand('boost collection')">
+              <strong>Boost Collection</strong>
+              <p style="font-size: 12px; color: #666; margin: 4px 0 0 0;">Accelerate payment collection</p>
+            </div>
+            <div style="padding: 12px; background: #f9f9f9; border-radius: 4px; cursor: pointer;" onclick="setCommand('check status')">
+              <strong>Check Status</strong>
+              <p style="font-size: 12px; color: #666; margin: 4px 0 0 0;">Get clinic overview and metrics</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Command Response -->
+        <div id="commandResponse" style="margin-top: 20px; display: none;">
+          <h4>Response:</h4>
+          <div class="command-response" id="commandLog"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Logs Tab -->
+    <div id="logs-tab" class="tab-content">
+      <div class="card">
+        <h3>📋 Activity Logs</h3>
+        <div class="command-response" id="activityLog">Logs will appear here...\n</div>
+        <button class="btn small" onclick="clearLogs()" style="margin-top: 12px;">Clear Logs</button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) location.href = '/pages/login.html';
+    
+    const clinicId = (()=>{ 
+      try{ 
+        return JSON.parse(atob(token.split('.')[1])).clinicId 
+      }catch(e){
+        return 'default'
+      } 
+    })();
+    
+    document.getElementById('clinicName').textContent = `Clinic: ${clinicId}`;
+    
+    // Activity log
+    let activityLogs = ['[' + new Date().toLocaleTimeString() + '] App initialized\n'];
+    
+    // Menu bar toggle
+    const toggleBtn = document.getElementById('toggleNav');
+    const navMenu = document.getElementById('navMenu');
+    if (toggleBtn && navMenu) {
+      toggleBtn.addEventListener('click', () => navMenu.classList.toggle('open'));
+      document.addEventListener('click', (e) => {
+        if (!navMenu.contains(e.target) && !toggleBtn.contains(e.target) && navMenu.classList.contains('open')) {
+          navMenu.classList.remove('open');
+        }
+      });
+    }
+
+    // Tab switching
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        // Remove active from all tabs and contents
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        
+        // Add active to clicked tab
+        tab.classList.add('active');
+        const tabName = tab.getAttribute('data-tab');
+        document.getElementById(tabName + '-tab').classList.add('active');
+      });
+    });
+
+    // Set command from quick buttons
+    function setCommand(cmd) {
+      document.getElementById('aiCommand').value = cmd;
+    }
+
+    // Add log entry
+    function addLog(message) {
+      const timestamp = '[' + new Date().toLocaleTimeString() + '] ';
+      activityLogs.push(timestamp + message);
+      document.getElementById('activityLog').textContent = activityLogs.join('');
+    }
+
+    // Clear logs
+    function clearLogs() {
+      activityLogs = [];
+      document.getElementById('activityLog').textContent = 'Logs cleared\n';
+    }
+
+    // Run individual agent
+    async function runAgent(agentType, btn) {
+      console.log('🔍 runAgent called with:', agentType, btn);
+      
+      const agentMap = {
+        'appointment': 'run-appointment',
+        'revenue': 'run-revenue',
+        'case': 'run-case',
+        'inventory': 'run-inventory'
+      };
+
+      const endpoint = agentMap[agentType];
+      console.log('📍 Endpoint:', endpoint);
+      
+      const statusId = agentType.substring(0, 3) + '-status';
+      console.log('🎯 Status ID:', statusId);
+      
+      const statusEl = document.getElementById(statusId);
+      console.log('✓ Status element found:', statusEl);
+      
+      const detailsEl = document.getElementById(agentType.substring(0, 3) + (agentType === 'revenue' ? '-details' : agentType === 'appointment' ? '-details' : '-details'));
+      
+      btn.disabled = true;
+      statusEl.textContent = '⏳ Running...';
+      statusEl.className = 'agent-status running';
+      
+      console.log('✓ Status updated to Running');
+
+      try {
+        const res = await fetch(`/api/agents/${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clinicId })
+        });
+        
+        console.log('📡 Response received:', res.status);
+        
+        const data = await res.json();
+        console.log('📦 Data:', data);
+        
+        if (res.ok) {
+          statusEl.textContent = '✅ Success';
+          statusEl.className = 'agent-status success';
+          
+          // For appointment agent, open the report page
+          if (agentType === 'appointment') {
+            addLog(`${agentType} agent executed successfully - Opening report`);
+            console.log('→ Redirecting to appointments-report.html');
+            // Redirect immediately
+            window.location.href = '/pages/appointments-report.html';
+          } else {
+            // For other agents, show details
+            if (data.data) {
+              const analysis = data.data.analysis || {};
+              let details = `Last run: ${new Date().toLocaleTimeString()}\n`;
+              details += JSON.stringify(analysis, null, 2);
+              detailsEl.textContent = details;
+              detailsEl.style.display = 'block';
+            }
+            addLog(`${agentType} agent executed successfully`);
+          }
+        } else {
+          throw new Error(data.error || 'Agent execution failed');
+        }
+      } catch (e) {
+        console.error('❌ Error:', e);
+        statusEl.textContent = '❌ Error';
+        statusEl.className = 'agent-status error';
+        addLog(`Error: ${e.message}`);
+      } finally {
+        btn.disabled = false;
+        setTimeout(() => {
+          if (statusEl.className.includes('success') && agentType !== 'appointment') {
+            statusEl.textContent = '✅ Completed';
+          }
+        }, 2000);
+      }
+    }
+
+    // Run all agents
+    async function runAllAgents() {
+      const btn = document.getElementById('runAllBtn');
+      const statusDiv = document.getElementById('allAgentsStatus');
+      const logDiv = document.getElementById('allAgentsLog');
+      
+      btn.disabled = true;
+      statusDiv.style.display = 'block';
+      logDiv.textContent = 'Running all agents...\n';
+
+      try {
+        const res = await fetch('/api/agents/run-all', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clinicId })
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok) {
+          let output = 'All agents executed successfully!\n\n';
+          Object.entries(data.data || {}).forEach(([key, value]) => {
+            output += `${key.toUpperCase()}:\n`;
+            output += JSON.stringify(value, null, 2) + '\n\n';
+          });
+          logDiv.textContent = output;
+          addLog('All agents executed successfully');
+        } else {
+          throw new Error(data.error || 'Execution failed');
+        }
+      } catch (e) {
+        logDiv.textContent = 'Error: ' + e.message;
+        addLog('Error: ' + e.message);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // Execute AI command
+    async function executeAICommand() {
+      const cmd = document.getElementById('aiCommand').value.trim();
+      if (!cmd) {
+        alert('Enter a command');
+        return;
+      }
+
+      const responseDiv = document.getElementById('commandResponse');
+      const logDiv = document.getElementById('commandLog');
+      
+      responseDiv.style.display = 'block';
+      logDiv.textContent = 'Processing command: ' + cmd + '\n\nLoading...';
+
+      try {
+        const res = await fetch('/api/agents/command', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ clinicId, command: cmd })
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok && data.data) {
+          logDiv.textContent = JSON.stringify(data.data, null, 2);
+          addLog(`Command executed: ${cmd}`);
+        } else {
+          throw new Error(data.error || 'Command execution failed');
+        }
+      } catch (e) {
+        logDiv.textContent = 'Error: ' + e.message;
+        addLog('Error: ' + e.message);
+      }
+    }
+
+  </script>
+</body>
+</html>

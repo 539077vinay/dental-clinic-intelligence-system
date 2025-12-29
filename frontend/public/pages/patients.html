@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Patients</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="simple-page">
+  <div class="navbar">
+    <div class="navbar-inner">
+      <button class="hamburger-btn" id="toggleNav">☰</button>
+      <h1 class="logo">🦷 Dental Clinic</h1>
+      <ul class="nav-menu" id="navMenu">
+        <li><a href="/pages/dashboard.html">Dashboard</a></li>
+        <li><a href="/pages/setup.html">Setup</a></li>
+        <li><a href="/pages/appointments.html">Appointments</a></li>
+        <li><a href="/pages/patients.html" class="active">Patients</a></li>
+        <li><a href="/pages/agents.html">Agents</a></li>
+        <li><a href="/pages/inventory.html">Inventory</a></li>
+        <li><a href="/pages/billing.html">Billing</a></li>
+      </ul>
+      <div class="nav-right">
+        <span id="clinicName" class="clinic-badge"></span>
+        <a class="btn-small" href="/pages/dashboard.html">Back</a>
+      </div>
+    </div>
+  </div>
+
+  <main class="page-content">
+    <div class="card">
+      <div class="form-inline">
+        <input id="patientSearch" class="search-input" placeholder="Search patients by name or phone" />
+        <button id="newPatientBtn" class="btn primary">New Patient</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h3>Add Patient</h3>
+        <div class="form-group">
+          <label>Name</label>
+          <input id="pName" type="text" placeholder="Full name">
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input id="pPhone" type="tel" placeholder="Phone number">
+        </div>
+        <div class="form-group">
+          <label>Email</label>
+          <input id="pEmail" type="email" placeholder="Email">
+        </div>
+        <div style="margin-top:12px;"><button id="savePatient" class="btn primary">Save Patient</button></div>
+      </div>
+
+      <div class="card">
+        <h3>Patient List</h3>
+        <table class="table" id="patientsTable">
+          <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th></th></tr></thead>
+          <tbody>
+          </tbody>
+        </table>
+        <p id="noPatients" class="muted" style="margin-top:12px;">No patients yet</p>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) location.href = '/login.html';
+    const clinicId = (()=>{ try{ return JSON.parse(atob(token.split('.')[1])).clinicId }catch(e){return 'default'} })();
+    document.getElementById('clinicName').textContent = `Clinic: ${clinicId}`;
+    
+    // Menu bar toggle
+    const toggleBtn = document.getElementById('toggleNav');
+    const navMenu = document.getElementById('navMenu');
+    if (toggleBtn && navMenu) {
+      toggleBtn.addEventListener('click', () => navMenu.classList.toggle('open'));
+      document.addEventListener('click', (e) => {
+        if (!navMenu.contains(e.target) && !toggleBtn.contains(e.target) && navMenu.classList.contains('open')) {
+          navMenu.classList.remove('open');
+        }
+      });
+    }
+
+    // API helper
+    async function api(path, method = 'GET', body = null) {
+      const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } };
+      if (body) opts.body = JSON.stringify(body);
+      const res = await fetch(path, opts);
+      if (!res.ok) { const err = await res.json(); alert(err.error || 'Error'); return null; }
+      return res.json();
+    }
+
+    // Load patients from database
+    async function loadPatients() {
+      const result = await api(`/api/patients/${clinicId}`);
+      if (!result) return;
+      const rows = result.patients || [];
+      const tbody = document.querySelector('#patientsTable tbody'); tbody.innerHTML = '';
+      if (!rows.length) {
+        document.getElementById('noPatients').style.display = 'block';
+      } else {
+        document.getElementById('noPatients').style.display = 'none';
+        rows.forEach(p => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${p.name}</td><td>${p.phone}</td><td>${p.email}</td><td><button class="btn small" onclick="callPatient('${p.phone}')">Call</button></td>`;
+          tbody.appendChild(tr);
+        });
+      }
+    }
+
+    function callPatient(phone) { alert('Call: ' + phone); }
+
+    // Save patient to database
+    document.getElementById('savePatient').addEventListener('click', async () => {
+      const name = document.getElementById('pName').value.trim();
+      const phone = document.getElementById('pPhone').value.trim();
+      const email = document.getElementById('pEmail').value.trim();
+      if (!name || !phone) { alert('Name and phone required'); return; }
+      
+      const result = await api('/api/add-patient', 'POST', { clinicId, patient: { name, phone, email } });
+      if (result) {
+        document.getElementById('pName').value = '';
+        document.getElementById('pPhone').value = '';
+        document.getElementById('pEmail').value = '';
+        loadPatients();
+      }
+    });
+
+    // Search patients
+    document.getElementById('patientSearch').addEventListener('input', async (e) => {
+      const q = e.target.value.toLowerCase();
+      const result = await api(`/api/patients/${clinicId}`);
+      if (!result) return;
+      const rows = result.patients || [];
+      const tbody = document.querySelector('#patientsTable tbody');
+      tbody.innerHTML = '';
+      const filtered = rows.filter(r => r.name.toLowerCase().includes(q) || r.phone.toLowerCase().includes(q));
+      if (!filtered.length) {
+        document.getElementById('noPatients').style.display = 'block';
+      } else {
+        document.getElementById('noPatients').style.display = 'none';
+        filtered.forEach(p => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${p.name}</td><td>${p.phone}</td><td>${p.email}</td><td><button class="btn small" onclick="callPatient('${p.phone}')">Call</button></td>`;
+          tbody.appendChild(tr);
+        });
+      }
+    });
+
+    loadPatients();
+  </script>
+</body>
+</html>

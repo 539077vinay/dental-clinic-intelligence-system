@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Clinic Setup</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="simple-page">
+  <div class="navbar">
+    <div class="navbar-inner">
+      <button class="hamburger-btn" id="toggleNav">☰</button>
+      <h1 class="logo">🦷 Dental Clinic</h1>
+      <ul class="nav-menu" id="navMenu">
+        <li><a href="/pages/dashboard.html">Dashboard</a></li>
+        <li><a href="/pages/setup.html" class="active">Setup</a></li>
+        <li><a href="/pages/appointments.html">Appointments</a></li>
+        <li><a href="/pages/patients.html">Patients</a></li>
+        <li><a href="/pages/agents.html">Agents</a></li>
+        <li><a href="/pages/inventory.html">Inventory</a></li>
+        <li><a href="/pages/billing.html">Billing</a></li>
+      </ul>
+      <div class="nav-right">
+        <span id="clinicName" class="clinic-badge"></span>
+        <a class="btn-small" href="/pages/dashboard.html">Back</a>
+      </div>
+    </div>
+  </div>
+
+  <main class="page-content">
+    <div class="card">
+      <h3>Basic Information</h3>
+      <div class="form-row">
+        <div class="form-group"><label>Clinic ID</label><input id="cId" readonly></div>
+        <div class="form-group"><label>Owner Name</label><input id="cOwner" placeholder="Owner name"></div>
+        <div class="form-group"><label>Email</label><input id="cEmail" type="email" placeholder="owner@clinic.com"></div>
+      </div>
+      <div style="margin-top:12px;"><button id="saveSetup" class="btn primary">Save</button></div>
+    </div>
+
+    <div class="card">
+      <h3>Working Hours (optional)</h3>
+      <div class="form-row">
+        <div class="form-group"><label>Monday</label><input id="hourMon" placeholder="9:00-17:00"></div>
+        <div class="form-group"><label>Tuesday</label><input id="hourTue" placeholder="9:00-17:00"></div>
+        <div class="form-group"><label>Wednesday</label><input id="hourWed" placeholder="9:00-17:00"></div>
+      </div>
+      <div style="margin-top:12px;"><button id="saveHours" class="btn primary">Save Hours</button></div>
+    </div>
+  </main>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) location.href = '/login.html';
+    const clinicId = (()=>{ try{ return JSON.parse(atob(token.split('.')[1])).clinicId }catch(e){return 'default'} })();
+    document.getElementById('clinicName').textContent = `Clinic: ${clinicId}`;
+    
+    // Menu bar toggle
+    const toggleBtn = document.getElementById('toggleNav');
+    const navMenu = document.getElementById('navMenu');
+    if (toggleBtn && navMenu) {
+      toggleBtn.addEventListener('click', () => navMenu.classList.toggle('open'));
+      document.addEventListener('click', (e) => {
+        if (!navMenu.contains(e.target) && !toggleBtn.contains(e.target) && navMenu.classList.contains('open')) {
+          navMenu.classList.remove('open');
+        }
+      });
+    }
+    
+    document.getElementById('cId').value = clinicId;
+    document.getElementById('saveSetup').addEventListener('click', async ()=>{
+      const owner=document.getElementById('cOwner').value; const email=document.getElementById('cEmail').value;
+      try{ await fetch('/api/start-trial',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clinicId, ownerName: owner, email})}); alert('Saved'); }catch(e){alert('Save failed');}
+    });
+    document.getElementById('saveHours').addEventListener('click', async ()=>{
+      const hours={ mon:document.getElementById('hourMon').value, tue:document.getElementById('hourTue').value, wed:document.getElementById('hourWed').value };
+      try{ await fetch('/api/set-hours',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({clinicId, hours})}); alert('Hours saved'); }catch(e){alert('Save failed');}
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+{
+  "users": [
+    {
+      "id": "user-1766854413867",
+      "clinicId": "vinay",
+      "name": "DR.Vinay",
+      "email": "vinaysetty758@gmail.com",
+      "password": "$2a$10$YzVAxc0S4bEj3D9HxyTJHO8duq2uyoqqRHNwhmh.E0ENCcMt2jo6K",
+      "role": "owner",
+      "createdAt": "2025-12-27T16:53:33.875Z"
+    }
+  ],
+  "clinics": [
+    {
+      "id": "vinay",
+      "ownerUserId": null,
+      "ownerName": "DR.Vinay",
+      "email": "vinaysetty758@gmail.com",
+      "active": 1,
+      "createdAt": "2025-12-27T16:53:33.929Z"
+    }
+  ],
+  "doctors": [],
+  "services": [],
+  "inventory": [],
+  "appointments": [],
+  "cases": [],
+  "invoices": [],
+  "purchase_orders": [],
+  "vendors": [
+    {
+      "id": "vendor-1",
+      "email": "vendor@example.com"
+    }
+  ]
+}

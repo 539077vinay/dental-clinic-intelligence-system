@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Inventory</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="simple-page">
+  <div class="navbar">
+    <div class="navbar-inner">
+      <button class="hamburger-btn" id="toggleNav">☰</button>
+      <h1 class="logo">🦷 Dental Clinic</h1>
+      <ul class="nav-menu" id="navMenu">
+        <li><a href="/pages/dashboard.html">Dashboard</a></li>
+        <li><a href="/pages/setup.html">Setup</a></li>
+        <li><a href="/pages/appointments.html">Appointments</a></li>
+        <li><a href="/pages/patients.html">Patients</a></li>
+        <li><a href="/pages/agents.html">Agents</a></li>
+        <li><a href="/pages/inventory.html" class="active">Inventory</a></li>
+        <li><a href="/pages/billing.html">Billing</a></li>
+      </ul>
+      <div class="nav-right">
+        <span id="clinicName" class="clinic-badge"></span>
+        <a class="btn-small" href="/pages/dashboard.html">Back</a>
+      </div>
+    </div>
+  </div>
+
+  <main class="page-content">
+    <div class="card">
+      <h3>Add Item</h3>
+      <div class="form-inline">
+        <input id="sku" class="search-input" placeholder="SKU">
+        <input id="qty" type="number" class="search-input" placeholder="Qty">
+        <button id="addItem" class="btn primary">Add</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Stock</h3>
+      <table class="table" id="stockTable"><thead><tr><th>SKU</th><th>Qty</th><th></th></tr></thead><tbody></tbody></table>
+      <p id="noStock" class="muted" style="margin-top:12px;">No inventory items</p>
+    </div>
+
+    <!-- AI Command Center -->
+    <div class="card" style="margin-top: 20px;">
+      <h3>🤖 AI Command Center</h3>
+      <p>Send natural language commands to AI agents</p>
+      
+      <div style="margin: 16px 0;">
+        <label style="display: block; margin-bottom: 8px;">Command:</label>
+        <div class="form-inline">
+          <input id="aiCommand" class="search-input" placeholder="e.g., Reduce cancellations, Increase revenue, Check status" style="flex: 1;">
+        </div>
+      </div>
+
+      <div style="margin-top: 12px;">
+        <button id="execCmd" class="btn primary" onclick="executeAICommand()">Execute Command</button>
+      </div>
+
+      <!-- Command Response -->
+      <div id="commandResponse" style="margin-top: 20px; display: none;">
+        <h4>Response:</h4>
+        <div class="command-response" id="commandLog"></div>
+      </div>
+    </div>
+
+    <!-- Activity Logs for AI Command Center -->
+    <div class="card" style="margin-top: 20px;">
+      <h3>📋 Activity Logs</h3>
+      <div class="command-response" id="activityLog">Logs will appear here...
+      </div>
+      <button class="btn small" onclick="clearLogs()" style="margin-top: 12px;">Clear Logs</button>
+    </div>
+
+    <div class="card" style="margin-top: 20px;">
+      <h2>Why Dental Clinic AI?</h2>
+      <div class="features-grid">
+        <div class="feature-item">
+          <img src="/images/automation.png" alt="24/7 Automation" class="feature-icon">
+          <h4>24/7 Automation</h4>
+          <p>AI agents work around the clock</p>
+        </div>
+        <div class="feature-item">
+          <img src="/images/revenue.png" alt="Increase Revenue" class="feature-icon">
+          <h4>Increase Revenue</h4>
+          <p>Smart scheduling and follow-ups</p>
+        </div>
+        <div class="feature-item">
+          <img src="/images/inventory.png" alt="Inventory Management" class="feature-icon">
+          <h4>Inventory Management</h4>
+          <p>Auto stock tracking and orders</p>
+        </div>
+        <div class="feature-item">
+          <img src="/images/whatsapp.png" alt="WhatsApp Integration" class="feature-icon">
+          <h4>WhatsApp Integration</h4>
+          <p>Direct patient communication</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) location.href = '/login.html';
+    const clinicId = (()=>{ try{ return JSON.parse(atob(token.split('.')[1])).clinicId }catch(e){return 'default'} })();
+    document.getElementById('clinicName').textContent = `Clinic: ${clinicId}`;
+    
+    // Activity log for AI Command Center
+    let activityLogs = ['[' + new Date().toLocaleTimeString() + '] App initialized\n'];
+
+    // Set command from quick buttons
+    function setCommand(cmd) {
+      document.getElementById('aiCommand').value = cmd;
+    }
+
+    // Add log entry
+    function addLog(message) {
+      const timestamp = '[' + new Date().toLocaleTimeString() + '] ';
+      activityLogs.push(timestamp + message);
+      const activityLogDiv = document.getElementById('activityLog');
+      if (activityLogDiv) {
+        activityLogDiv.textContent = activityLogs.join('');
+      } else {
+        console.warn("Activity log div not found in inventory.html");
+      }
+    }
+
+    // Clear logs
+    function clearLogs() {
+      activityLogs = [];
+      const activityLogDiv = document.getElementById('activityLog');
+      if (activityLogDiv) {
+        activityLogDiv.textContent = 'Logs cleared\n';
+      } else {
+        console.warn("Activity log div not found in inventory.html");
+      }
+    }
+
+    // Menu bar toggle
+    const toggleBtn = document.getElementById('toggleNav');
+    const navMenu = document.getElementById('navMenu');
+    if (toggleBtn && navMenu) {
+      toggleBtn.addEventListener('click', () => navMenu.classList.toggle('open'));
+      document.addEventListener('click', (e) => {
+        if (!navMenu.contains(e.target) && !toggleBtn.contains(e.target) && navMenu.classList.contains('open')) {
+          navMenu.classList.remove('open');
+        }
+      });
+    }
+
+    // API helper
+    async function api(path, method = 'GET', body = null) {
+      const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } };
+      if (body) opts.body = JSON.stringify(body);
+      const res = await fetch(path, opts);
+      if (!res.ok) { const err = await res.json(); alert(err.error || 'Error'); return null; }
+      return res.json();
+    }
+
+    // Load inventory from database
+    async function load() {
+      const result = await api(`/api/inventory/${clinicId}`);
+      if (!result) return;
+      const rows = result.inventory || [];
+      const tbody = document.querySelector('#stockTable tbody');
+      tbody.innerHTML = '';
+      if (!rows.length) {
+        document.getElementById('noStock').style.display = 'block';
+      } else {
+        document.getElementById('noStock').style.display = 'none';
+        rows.forEach(r => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${r.sku}</td><td>${r.qty}</td><td><button class="btn small" onclick="dec('${r.sku}')">-1</button></td>`;
+          tbody.appendChild(tr);
+        });
+      }
+    }
+
+    async function dec(sku) {
+      const result = await api('/api/decrement-inventory', 'POST', { clinicId, sku, amount: 1 });
+      if (!result) return;
+      load();
+    }
+
+    document.getElementById('addItem').addEventListener('click', async () => {
+      const sku = document.getElementById('sku').value.trim();
+      const qty = parseInt(document.getElementById('qty').value.trim());
+      if (!sku || isNaN(qty)) return alert('Enter SKU and quantity');
+      const result = await api('/api/add-inventory', 'POST', { clinicId, sku, qty });
+      if (!result) return;
+      document.getElementById('sku').value = '';
+      document.getElementById('qty').value = '';
+      load();
+    });
+
+    // AI Command Center
+    async function executeAICommand() {
+      const cmd = document.getElementById('aiCommand').value.trim();
+      if (!cmd) return alert('Enter a command');
+      const result = await api('/api/execute-command', 'POST', { clinicId, command: cmd });
+      if (!result) return;
+      document.getElementById('commandLog').textContent = JSON.stringify(result, null, 2);
+      addLog(`Executed command: ${cmd}`);
+    }
+
+    load();
+  </script>
+</body>
+</html>

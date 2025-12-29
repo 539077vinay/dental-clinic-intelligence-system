@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Appointments</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="simple-page">
+  <div class="navbar">
+    <div class="navbar-inner">
+      <button class="hamburger-btn" id="toggleNav">☰</button>
+      <h1 class="logo">🦷 Dental Clinic</h1>
+      <ul class="nav-menu" id="navMenu">
+        <li><a href="/pages/dashboard.html">Dashboard</a></li>
+        <li><a href="/pages/setup.html">Setup</a></li>
+        <li><a href="/pages/appointments.html" class="active">Appointments</a></li>
+        <li><a href="/pages/patients.html">Patients</a></li>
+        <li><a href="/pages/agents.html">Agents</a></li>
+        <li><a href="/pages/inventory.html">Inventory</a></li>
+        <li><a href="/pages/billing.html">Billing</a></li>
+      </ul>
+      <div class="nav-right">
+        <span id="clinicName" class="clinic-badge"></span>
+        <a class="btn-small" href="/pages/dashboard.html">Back</a>
+      </div>
+    </div>
+  </div>
+
+  <main class="page-content">
+    <div class="card">
+      <h3>Book Appointment</h3>
+      <div class="form-row">
+        <div class="form-group"><label>Patient Name</label><input id="aptName" type="text" placeholder="Full name"></div>
+        <div class="form-group"><label>Phone</label><input id="aptPhone" type="tel" placeholder="Phone"></div>
+        <div class="form-group"><label>Email</label><input id="aptEmail" type="email" placeholder="Email"></div>
+        <div class="form-group"><label>Date & Time</label><input id="aptDate" type="datetime-local"></div>
+      </div>
+      <div style="margin-top:12px;"><button id="bookApt" class="btn primary">Book Appointment</button></div>
+    </div>
+
+    <div class="card">
+      <h3>Upcoming Appointments</h3>
+      <table class="table" id="apptsTable"><thead><tr><th>Patient</th><th>When</th><th>Phone</th><th></th></tr></thead><tbody></tbody></table>
+      <p id="noAppts" class="muted" style="margin-top:12px;">No upcoming appointments</p>
+    </div>
+  </main>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) location.href = '/login.html';
+    const clinicId = (()=>{ try{ return JSON.parse(atob(token.split('.')[1])).clinicId }catch(e){return 'default'} })();
+    document.getElementById('clinicName').textContent = `Clinic: ${clinicId}`;
+    
+    // Menu bar toggle
+    const toggleBtn = document.getElementById('toggleNav');
+    const navMenu = document.getElementById('navMenu');
+    if (toggleBtn && navMenu) {
+      toggleBtn.addEventListener('click', () => navMenu.classList.toggle('open'));
+      document.addEventListener('click', (e) => {
+        if (!navMenu.contains(e.target) && !toggleBtn.contains(e.target) && navMenu.classList.contains('open')) {
+          navMenu.classList.remove('open');
+        }
+      });
+    }
+
+    // API helper
+    async function api(path, method = 'GET', body = null) {
+      const opts = { method, headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` } };
+      if (body) opts.body = JSON.stringify(body);
+      const res = await fetch(path, opts);
+      if (!res.ok) { const err = await res.json(); alert(err.error || 'Error'); return null; }
+      return res.json();
+    }
+
+    // Load appointments from database
+    async function load() {
+      const result = await api(`/api/appointments/${clinicId}`);
+      if (!result) return;
+      const rows = result.appointments || [];
+      const tbody = document.querySelector('#apptsTable tbody');
+      tbody.innerHTML = '';
+      if (!rows.length) {
+        document.getElementById('noAppts').style.display = 'block';
+      } else {
+        document.getElementById('noAppts').style.display = 'none';
+        rows.forEach(r => {
+          if (r.status !== 'cancelled') {
+            const tr = document.createElement('tr');
+            const when = new Date(r.date + 'T' + (r.time || '09:00')).toLocaleString();
+            tr.innerHTML = `<td>${r.patientName}</td><td>${when}</td><td>${r.phone}</td><td><button class="btn small" onclick="cancel('${r.id}')">Cancel</button></td>`;
+            tbody.appendChild(tr);
+          }
+        });
+        if (rows.filter(r => r.status !== 'cancelled').length === 0) {
+          document.getElementById('noAppts').style.display = 'block';
+        }
+      }
+    }
+
+    async function cancel(id) {
+      if (!confirm('Cancel this appointment?')) return;
+      const result = await api('/api/cancel-appointment', 'POST', { clinicId, appointmentId: id });
+      if (result) load();
+    }
+
+    document.getElementById('bookApt').addEventListener('click', async () => {
+      const patientName = document.getElementById('aptName').value.trim();
+      const phone = document.getElementById('aptPhone').value.trim();
+      const email = document.getElementById('aptEmail').value.trim();
+      const dateTime = document.getElementById('aptDate').value;
+      
+      if (!patientName || !phone || !dateTime) { alert('Name, phone and date required'); return; }
+      
+      const date = dateTime.split('T')[0];
+      const time = dateTime.split('T')[1];
+      
+      const result = await api('/api/book-appointment', 'POST', { 
+        clinicId, 
+        appointment: { patientName, phone, email, date, time }
+      });
+      
+      if (result) {
+        document.getElementById('aptName').value = '';
+        document.getElementById('aptPhone').value = '';
+        document.getElementById('aptEmail').value = '';
+        document.getElementById('aptDate').value = '';
+        load();
+      }
+    });
+
+    load();
+  </script>
+</body>
+</html>

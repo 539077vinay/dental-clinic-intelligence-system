@@ -1,0 +1,10 @@
+# .gitignore for Frontend
+node_modules/
+dist/
+build/
+.DS_Store
+*.log
+.env.local
+.env.*.local
+.vscode/
+.idea/

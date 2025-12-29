@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dental Clinic AI — Dashboard</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="dashboard-page">
+  <div class="navbar">
+    <div class="navbar-inner">
+      <button class="hamburger-btn" id="toggleSidebarBtn">☰</button>
+      <h1 class="logo">🦷 Dental Clinic</h1>
+      <ul class="nav-menu" id="navMenu">
+        <li><a href="/pages/dashboard.html" class="active">Dashboard</a></li>
+        <li><a href="/pages/setup.html">Setup</a></li>
+        <li><a href="/pages/appointments.html">Appointments</a></li>
+        <li><a href="/pages/patients.html">Patients</a></li>
+        <li><a href="/pages/agents.html">Agents</a></li>
+        <li><a href="/pages/inventory.html">Inventory</a></li>
+        <li><a href="/pages/billing.html">Billing</a></li>
+      </ul>
+      <div class="nav-right">
+        <span id="clinicName" class="clinic-badge"></span>
+        <button id="logoutBtn" class="btn-small">Sign Out</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container dashboard-layout">
+    <aside class="sidebar">
+      <div class="sidebar-nav">
+        <button class="nav-item active" data-panel="overview">📊 Dashboard</button>
+        <a class="nav-item" href="/pages/setup.html">⚙️ Clinic Setup</a>
+        <a class="nav-item" href="/pages/appointments.html">📅 Appointments</a>
+        <a class="nav-item" href="/pages/patients.html">👥 Patients</a>
+        <a class="nav-item" href="/pages/agents.html">🤖 Agents & Commands</a>
+        <a class="nav-item" href="/pages/inventory.html">📦 Inventory</a>
+        <a class="nav-item" href="/pages/billing.html">💳 Billing & Reports</a>
+      </div>
+    </aside>
+
+    <main class="main-content">
+      <!-- Overview Panel -->
+      <div id="overviewPanel" class="panel visible">
+        <h2>Dashboard</h2>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <h3 id="apptCount">0</h3>
+            <p>Appointments</p>
+          </div>
+          <div class="stat-card">
+            <h3 id="caseCount">0</h3>
+            <p>Active Cases</p>
+          </div>
+          <div class="stat-card">
+            <h3 id="invoiceCount">0</h3>
+            <p>Invoices</p>
+          </div>
+          <div class="stat-card">
+            <h3 id="totalRevenue">$0</h3>
+            <p>Total Revenue</p>
+          </div>
+        </div>
+
+        <h3>Recent Appointments</h3>
+        <div id="appointmentsList" class="list">
+          <p class="empty">No appointments yet</p>
+        </div>
+
+        <h3>Pending Invoices</h3>
+        <div id="invoicesList" class="list">
+          <p class="empty">No invoices</p>
+        </div>
+      </div>
+
+      <!-- Clinic Setup Panel -->
+      <div id="setupPanel" class="panel">
+        <h2>Clinic Setup</h2>
+        
+        <div class="setup-section">
+          <h3>Basic Information</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Clinic ID</label>
+              <input id="setupClinicId" type="text" readonly>
+            </div>
+            <div class="form-group">
+              <label>Owner Name</label>
+              <input id="setupOwnerName" type="text" placeholder="Dr. Name">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Email</label>
+              <input id="setupEmail" type="email" placeholder="owner@clinic.com">
+            </div>
+            <div class="form-group">
+              <label>WhatsApp Number</label>
+              <input id="setupWhatsapp" type="tel" placeholder="+1234567890">
+              <button class="btn small" onclick="setWhatsapp()">Update</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="setup-section">
+          <h3>Working Hours</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Monday</label>
+              <input id="hourMon" type="text" placeholder="9:00-17:00">
+            </div>
+            <div class="form-group">
+              <label>Tuesday</label>
+              <input id="hourTue" type="text" placeholder="9:00-17:00">
+            </div>
+            <div class="form-group">
+              <label>Wednesday</label>
+              <input id="hourWed" type="text" placeholder="9:00-17:00">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Thursday</label>
+              <input id="hourThu" type="text" placeholder="9:00-17:00">
+            </div>
+            <div class="form-group">
+              <label>Friday</label>
+              <input id="hourFri" type="text" placeholder="9:00-17:00">
+            </div>
+            <div class="form-group">
+              <label>Saturday</label>
+              <input id="hourSat" type="text" placeholder="9:00-13:00">
+            </div>
+          </div>
+          <button class="btn primary" onclick="setWorkingHours()">Save Hours</button>
+        </div>
+
+        <div class="setup-section">
+          <h3>Doctors</h3>
+          <div class="form-row">
+            <div class="form-group flex">
+              <input id="doctorName" type="text" placeholder="Doctor name">
+              <input id="doctorSpecialty" type="text" placeholder="Specialty">
+              <button class="btn primary" onclick="addDoctor()">Add Doctor</button>
+            </div>
+          </div>
+          <div id="doctorsList" class="list"></div>
+        </div>
+
+        <div class="setup-section">
+          <h3>Services</h3>
+          <div class="form-row">
+            <div class="form-group flex">
+              <input id="serviceName" type="text" placeholder="Service name">
+              <input id="servicePrice" type="number" placeholder="Price" step="0.01">
+              <button class="btn primary" onclick="addService()">Add Service</button>
+            </div>
+          </div>
+          <div id="servicesList" class="list"></div>
+        </div>
+      </div>
+
+      <!-- Appointments Panel -->
+      <div id="appointmentsPanel" class="panel">
+        <h2>Appointments</h2>
+        
+        <div class="setup-section">
+          <h3>Book New Appointment</h3>
+          <div class="form-row">
+            <div class="form-group flex">
+              <input id="patientName" type="text" placeholder="Patient name">
+              <input id="patientPhone" type="tel" placeholder="Phone">
+              <input id="patientEmail" type="email" placeholder="Email">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group flex">
+              <input id="appointmentDate" type="datetime-local">
+              <select id="appointmentService">
+                <option value="">Select service</option>
+              </select>
+              <button class="btn primary" onclick="bookAppointment()">Book Appointment</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="setup-section">
+          <h3>All Appointments</h3>
+          <div id="allAppointmentsList" class="list"></div>
+        </div>
+      </div>
+
+      <!-- Agents Panel -->
+      <div id="agentsPanel" class="panel">
+        <h2>AI Agents & Commands</h2>
+        
+        <div class="agents-overview">
+          <p>Your 4 AI agents run automatically every morning at 7:00 AM. You can also trigger them manually here.</p>
+        </div>
+
+        <div class="agents-grid">
+          <div class="agent-card">
+            <h3>📅 Appointment Agent</h3>
+            <p>Finds empty slots and suggests optimal booking times.</p>
+            <small>Next: 7:00 AM</small>
+            <button class="btn small" onclick="runAgent('appointment')">Run Now</button>
+          </div>
+
+          <div class="agent-card">
+            <h3>💰 Revenue Agent</h3>
+            <p>Tracks unpaid invoices and sends follow-up messages.</p>
+            <small>Next: 7:05 AM</small>
+            <button class="btn small" onclick="runAgent('revenue')">Run Now</button>
+          </div>
+
+          <div class="agent-card">
+            <h3>📋 Case Agent</h3>
+            <p>Verifies treatment readiness and creates case files.</p>
+            <small>Next: 7:10 AM</small>
+            <button class="btn small" onclick="runAgent('case')">Run Now</button>
+          </div>
+
+          <div class="agent-card">
+            <h3>📦 Inventory Agent</h3>
+            <p>Checks stock levels and creates purchase orders.</p>
+            <small>Next: 7:15 AM</small>
+            <button class="btn small" onclick="runAgent('inventory')">Run Now</button>
+          </div>
+        </div>
+
+        <div class="setup-section">
+          <h3>AI Command Center</h3>
+          <p>Type a command and agents will collaborate to execute it:</p>
+          <div class="form-row">
+            <div class="form-group flex">
+              <input id="aiCommand" type="text" placeholder="e.g., Reduce cancellations, Increase revenue">
+              <button class="btn primary" onclick="executeCommand()">Execute</button>
+            </div>
+          </div>
+          <div id="commandLog" class="log"></div>
+        </div>
+      </div>
+
+      <!-- Inventory Panel -->
+      <div id="inventoryPanel" class="panel">
+        <h2>Inventory Management</h2>
+        
+        <div class="setup-section">
+          <h3>Add Inventory Item</h3>
+          <div class="form-row">
+            <div class="form-group flex">
+              <input id="inventorySku" type="text" placeholder="SKU/Item code">
+              <input id="inventoryQty" type="number" placeholder="Quantity" value="0">
+              <button class="btn primary" onclick="addInventoryItem()">Add Item</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="setup-section">
+          <h3>Current Stock</h3>
+          <div id="inventoryList" class="list"></div>
+        </div>
+
+        <div class="setup-section">
+          <h3>Purchase Orders</h3>
+          <div id="purchaseOrdersList" class="list"></div>
+        </div>
+      </div>
+
+      <!-- Billing & Reports Panel -->
+      <div id="billingPanel" class="panel">
+        <h2>Billing & Reports</h2>
+        
+        <div class="setup-section">
+          <h3>Create Invoice</h3>
+          <div class="form-row">
+            <div class="form-group flex">
+              <select id="invoiceCaseId">
+                <option value="">Select case</option>
+              </select>
+              <input id="invoiceAmount" type="number" placeholder="Amount" step="0.01">
+              <button class="btn primary" onclick="createInvoice()">Create Invoice</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="setup-section">
+          <h3>Monthly Report</h3>
+          <button class="btn primary" onclick="generateMonthlyReport()">Generate Report</button>
+          <div id="monthlyReport" class="report"></div>
+        </div>
+
+        <div class="setup-section">
+          <h3>All Invoices</h3>
+          <div id="allInvoicesList" class="list"></div>
+        </div>
+
+        <div class="setup-section">
+          <h3>Subscription</h3>
+          <p id="subscriptionStatus">Plan: Free Trial</p>
+          <button class="btn primary" onclick="upgradePlan()">Upgrade to Premium</button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="toast"></div>
+
+  <script src="/js/dashboard.js"></script>
+</body>
+</html>

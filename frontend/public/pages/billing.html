@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Billing & Reports</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body class="simple-page">
+  <div class="navbar">
+    <div class="navbar-inner">
+      <button class="hamburger-btn" id="toggleNav">☰</button>
+      <h1 class="logo">🦷 Dental Clinic</h1>
+      <ul class="nav-menu" id="navMenu">
+        <li><a href="/pages/dashboard.html">Dashboard</a></li>
+        <li><a href="/pages/setup.html">Setup</a></li>
+        <li><a href="/pages/appointments.html">Appointments</a></li>
+        <li><a href="/pages/patients.html">Patients</a></li>
+        <li><a href="/pages/agents.html">Agents</a></li>
+        <li><a href="/pages/inventory.html">Inventory</a></li>
+        <li><a href="/pages/billing.html" class="active">Billing</a></li>
+      </ul>
+      <div class="nav-right">
+        <span id="clinicName" class="clinic-badge"></span>
+        <a class="btn-small" href="/pages/dashboard.html">Back</a>
+      </div>
+    </div>
+  </div>
+
+  <main class="page-content">
+    <div class="card">
+      <h3>Create Invoice</h3>
+      <div class="form-row">
+        <div class="form-group"><label>Case ID</label><input id="caseId" placeholder="case-..."></div>
+        <div class="form-group"><label>Amount</label><input id="amount" type="number" placeholder="Amount"></div>
+      </div>
+      <div style="margin-top:12px;"><button id="createInv" class="btn primary">Create Invoice</button></div>
+    </div>
+
+    <div class="card">
+      <h3>Invoices</h3>
+      <table class="table" id="invoicesTable"><thead><tr><th>ID</th><th>Case</th><th>Amount</th><th>Paid</th></tr></thead><tbody></tbody></table>
+      <p id="noInv" class="muted" style="margin-top:12px;">No invoices yet</p>
+    </div>
+  </main>
+
+  <script>
+    const token = localStorage.getItem('token');
+    if (!token) location.href = '/login.html';
+    const clinicId = (()=>{ try{ return JSON.parse(atob(token.split('.')[1])).clinicId }catch(e){return 'default'} })();
+    document.getElementById('clinicName').textContent = `Clinic: ${clinicId}`;
+    
+    // Menu bar toggle
+    const toggleBtn = document.getElementById('toggleNav');
+    const navMenu = document.getElementById('navMenu');
+    if (toggleBtn && navMenu) {
+      toggleBtn.addEventListener('click', () => navMenu.classList.toggle('open'));
+      document.addEventListener('click', (e) => {
+        if (!navMenu.contains(e.target) && !toggleBtn.contains(e.target) && navMenu.classList.contains('open')) {
+          navMenu.classList.remove('open');
+        }
+      });
+    }
+    
+    const key = 'invoices_'+clinicId;
+    function load(){ const rows=JSON.parse(localStorage.getItem(key)||'[]'); const tbody=document.querySelector('#invoicesTable tbody'); tbody.innerHTML=''; if(!rows.length) document.getElementById('noInv').style.display='block'; else document.getElementById('noInv').style.display='none'; rows.forEach(r=>{ const tr=document.createElement('tr'); tr.innerHTML=`<td>${r.id}</td><td>${r.caseId}</td><td>$${(r.amount||0).toFixed(2)}</td><td>${r.paid? '✅':'❌'}</td>`; tbody.appendChild(tr); }); }
+    document.getElementById('createInv').addEventListener('click', async ()=>{
+      const caseIdVal=document.getElementById('caseId').value.trim(); const amt=parseFloat(document.getElementById('amount').value)||0; if(!caseIdVal||amt<=0){ alert('Case and amount required'); return; }
+      try{ const res=await fetch('/api/invoice',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ clinicId, caseId: caseIdVal, amount: amt })}); const data=await res.json(); if(!res.ok) throw new Error(data.error||''); const rows=JSON.parse(localStorage.getItem(key)||'[]'); rows.push({ id:data.invoice.id, caseId: data.invoice.caseId, amount: data.invoice.amount, paid: data.invoice.paid }); localStorage.setItem(key, JSON.stringify(rows)); load(); document.getElementById('caseId').value=''; document.getElementById('amount').value=''; }catch(e){ alert('Create failed'); }
+    });
+    load();
+  </script>
+</body>
+</html>
